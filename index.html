@@ -21,7 +21,11 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{
-    margin:0;padding:0;height:100%;width:100%;
+    margin:0;padding:0;width:100%;
+    /* Fallback voor oude browsers; --vh wordt door JS gezet zodat we
+       de echte zichtbare viewport gebruiken (Safari adresbalk-fix). */
+    height:100vh;
+    height:calc(var(--vh, 1vh) * 100);
     overflow:hidden;
     background:#000;
     font-family:'Comic Sans MS','Chalkboard SE','Verdana',sans-serif;
@@ -38,6 +42,7 @@
     position:relative;
     width:100vw;
     height:100vh;
+    height:calc(var(--vh, 1vh) * 100);
     max-width:500px;
     background:var(--bg-sky);
     overflow:hidden;
@@ -230,7 +235,15 @@ const VIEW_W = 400;
 const VIEW_H = 700;
 let dpr = window.devicePixelRatio || 1;
 
+// Fix voor iOS Safari: 100vh telt de adresbalk mee, dus knoppen
+// vallen onderaan onder de browserbalk. We zetten --vh op de echte
+// zichtbare hoogte (window.innerHeight) en updaten bij elke wijziging.
+function setVH(){
+  const h = window.innerHeight;
+  document.documentElement.style.setProperty('--vh', (h/100) + 'px');
+}
 function resize(){
+  setVH();
   const w = document.getElementById('game').clientWidth;
   const h = document.getElementById('game').clientHeight;
   cv.width  = Math.floor(w * dpr);
@@ -239,6 +252,11 @@ function resize(){
   cv.style.height = h + 'px';
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', ()=>setTimeout(resize, 200));
+// Sommige iOS-versies updaten innerHeight pas na een scroll/visualViewport-event
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', resize);
+}
 resize();
 
 // Input-state
