@@ -683,6 +683,7 @@ function update(){
 
   // Vijanden bewegen + collision
   for(const en of state.enemies){
+    if(en.dead) continue;
     en.x += en.speed * en.dir;
     if(en.x < en.minX){ en.x = en.minX; en.dir = 1; }
     if(en.x > en.maxX){ en.x = en.maxX; en.dir = -1; }
@@ -695,11 +696,12 @@ function update(){
         // Stamp van bovenaf? -> vijand uit
         if(player.vy > 2 && (player.y + player.h) < en.y + 12){
           spawnSparkle(en.x, en.y);
-          en.x = -9999; // verwijder
+          en.dead = true; // permanent verwijderd
           player.vy = JUMP_V * 0.7;
           state.score += 20;
           document.getElementById('score').textContent = state.score;
           audio.sfx('stomp');
+          continue;
         } else {
           // Schade
           state.lives--;
@@ -850,7 +852,7 @@ function render(){
 
     // Vijanden
     for(const en of state.enemies){
-      if(en.x < -1000) continue;
+      if(en.dead) continue;
       const bob = Math.sin(en.anim)*3;
       ctx.font = en.size+'px serif';
       ctx.textAlign='center';
