@@ -33,33 +33,39 @@
     user-select:none;-webkit-user-select:none;
     touch-action:none;
   }
+  /* Hoogte-strategie:
+     1) 100vh als fallback voor oude browsers
+     2) -webkit-fill-available voor iOS Safari (échte zichtbare hoogte)
+     3) --vh (door JS gezet uit visualViewport) als safety-net
+     4) 100dvh voor moderne browsers — past dynamisch aan adresbalk aan
+     De laatste die de browser snapt wint. */
   #wrap{
-    /* Niet inset:0 gebruiken — op iOS Safari is bottom:0 het einde van
-       de layout-viewport (achter de toolbar). Forceer expliciete hoogte
-       gebaseerd op --vh zodat we onder de toolbar uitkomen. */
     position:fixed;top:0;left:0;
     width:100%;
     height:100vh;
+    height:-webkit-fill-available;
     height:calc(var(--vh, 1vh) * 100);
+    height:100dvh;
     display:flex;align-items:center;justify-content:center;
     background:#000;
   }
   #game{
     position:relative;
     width:100vw;
-    height:100vh;
-    height:calc(var(--vh, 1vh) * 100);
+    height:100%;
     max-width:500px;
     background:var(--bg-sky);
     overflow:hidden;
-    display:flex;
-    flex-direction:column;
   }
-  /* Speelveld — neemt alle ruimte boven de knoppenbalk */
+  /* Knoppenbalk-hoogte als CSS-variabele, hergebruikt door playArea */
+  :root{
+    --controls-h: calc(120px + env(safe-area-inset-bottom));
+  }
+  /* Speelveld vult alles boven de knoppenbalk */
   #playArea{
-    position:relative;
-    flex:1 1 auto;
-    min-height:0;
+    position:absolute;
+    top:0;left:0;right:0;
+    bottom: var(--controls-h);
     overflow:hidden;
   }
   canvas{
@@ -96,13 +102,14 @@
   }
   #muteBtn.muted{background:rgba(120,0,0,0.7);}
 
-  /* Touch-knoppen — eigen rij onderaan, niet over het canvas */
+  /* Touch-knoppen — vaste hoogte balk onderaan, naast het speelveld */
   #controls{
-    position:relative;
-    flex:0 0 auto;
+    position:absolute;
+    left:0;right:0;bottom:0;
+    height: var(--controls-h);
     display:flex;justify-content:space-between;align-items:flex-end;
     padding:12px 16px calc(12px + env(safe-area-inset-bottom));
-    background:rgba(0,0,0,0.15);
+    background:rgba(0,0,0,0.35);
     z-index:6;
   }
   .group{display:flex;gap:14px;pointer-events:auto;}
@@ -783,6 +790,11 @@ function spawnConfetti(){
 /* ---------- 6. RENDER ---------- */
 function render(){
   const W = cv.width, H = cv.height;
+  // Wis het canvas en vul met lucht-kleur van het huidige level zodat
+  // letterbox-randen boven de wereld niet zwart of vies blijven.
+  const L0 = state.level;
+  ctx.fillStyle = L0 ? L0.bg[0] : '#7ec8ff';
+  ctx.fillRect(0,0,W,H);
   ctx.save();
   // Schaal: logische 400x700 -> echte canvas
   const scale = Math.min(W/VIEW_W, H/VIEW_H);
