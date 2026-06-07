@@ -46,6 +46,15 @@
     max-width:500px;
     background:var(--bg-sky);
     overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  /* Speelveld — neemt alle ruimte boven de knoppenbalk */
+  #playArea{
+    position:relative;
+    flex:1 1 auto;
+    min-height:0;
+    overflow:hidden;
   }
   canvas{
     display:block;
@@ -81,12 +90,13 @@
   }
   #muteBtn.muted{background:rgba(120,0,0,0.7);}
 
-  /* Touch-knoppen onderin */
+  /* Touch-knoppen — eigen rij onderaan, niet over het canvas */
   #controls{
-    position:absolute;left:0;right:0;bottom:0;
+    position:relative;
+    flex:0 0 auto;
     display:flex;justify-content:space-between;align-items:flex-end;
-    padding:14px 16px calc(14px + env(safe-area-inset-bottom));
-    pointer-events:none;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:rgba(0,0,0,0.15);
     z-index:6;
   }
   .group{display:flex;gap:14px;pointer-events:auto;}
@@ -154,16 +164,18 @@
 <body>
 <div id="wrap">
   <div id="game">
-    <canvas id="cv"></canvas>
+    <div id="playArea">
+      <canvas id="cv"></canvas>
 
-    <!-- Mute / unmute geluid -->
-    <div id="muteBtn" title="Geluid aan/uit">🔊</div>
+      <!-- Mute / unmute geluid -->
+      <div id="muteBtn" title="Geluid aan/uit">🔊</div>
 
-    <!-- HUD: score en level -->
-    <div id="hud" class="hidden">
-      <div class="pill">Score: <span id="score">0</span></div>
-      <div class="pill">❤️ <span id="lives">3</span></div>
-      <div class="pill" id="levelLabel">Level 1</div>
+      <!-- HUD: score en level -->
+      <div id="hud" class="hidden">
+        <div class="pill">Score: <span id="score">0</span></div>
+        <div class="pill">❤️ <span id="lives">3</span></div>
+        <div class="pill" id="levelLabel">Level 1</div>
+      </div>
     </div>
 
     <!-- Touch-knoppen -->
@@ -244,8 +256,11 @@ function setVH(){
 }
 function resize(){
   setVH();
-  const w = document.getElementById('game').clientWidth;
-  const h = document.getElementById('game').clientHeight;
+  // Canvas vult #playArea, dus meet die — niet het hele #game (dat is
+  // groter omdat de knoppenbalk er onder zit).
+  const play = document.getElementById('playArea');
+  const w = play.clientWidth;
+  const h = play.clientHeight;
   cv.width  = Math.floor(w * dpr);
   cv.height = Math.floor(h * dpr);
   cv.style.width  = w + 'px';
