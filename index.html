@@ -893,10 +893,10 @@ function drawJens(x,y){
   ctx.fillRect(-12 + legSwing, player.h-4, 12, 4);
   ctx.fillRect(  0 - legSwing, player.h-4, 12, 4);
 
-  // Shirt: Ajax rood-wit-rood verticaal
-  ctx.fillStyle = '#D2122E';
-  roundRect(-14, 18, 28, 28, 4, true);
+  // Shirt: Ajax wit-rood-wit verticaal (buitenkant wit, midden rood)
   ctx.fillStyle = '#fff';
+  roundRect(-14, 18, 28, 28, 4, true);
+  ctx.fillStyle = '#D2122E';
   ctx.fillRect(-6, 18, 12, 28);
   // Schouderlijntje
   ctx.fillStyle = 'rgba(0,0,0,0.15)';
@@ -917,17 +917,40 @@ function drawJens(x,y){
   ctx.beginPath(); ctx.arc(-7, 12, 2.5, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc( 7, 12, 2.5, 0, Math.PI*2); ctx.fill();
 
-  // Haar
-  ctx.fillStyle = '#3a2a1a';
+  // Haar — blond
+  ctx.fillStyle = '#f4d35e';
   ctx.beginPath();
   ctx.arc(0, 2, 14, Math.PI, Math.PI*2);
   ctx.fill();
   ctx.fillRect(-14, 0, 28, 5);
+  // Lichte plukjes voor wat detail
+  ctx.fillStyle = '#fff2a8';
+  ctx.fillRect(-10, -2, 5, 4);
+  ctx.fillRect(  3, -1, 5, 4);
 
   // Ogen
   ctx.fillStyle = '#222';
   ctx.beginPath(); ctx.arc(-4, 8, 2, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc( 5, 8, 2, 0, Math.PI*2); ctx.fill();
+
+  // Bril — twee rondjes + brugje + pootjes
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(-4, 8, 4.5, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc( 5, 8, 4.5, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0.5, 8); ctx.lineTo(0.5, 8); // brugje
+  ctx.moveTo(-0.5, 8); ctx.lineTo(0.5, 8);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-8.5, 8); ctx.lineTo(-12, 7); // linker pootje
+  ctx.moveTo( 9.5, 8); ctx.lineTo( 13, 7); // rechter pootje
+  ctx.stroke();
+  // Glimmetjes op de glazen
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath(); ctx.arc(-5.5, 6.5, 1.2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 3.5, 6.5, 1.2, 0, Math.PI*2); ctx.fill();
+
   // Glimlach
   ctx.strokeStyle = '#a0421e';
   ctx.lineWidth = 2;
@@ -935,8 +958,8 @@ function drawJens(x,y){
   ctx.arc(0, 13, 4, 0.2, Math.PI - 0.2);
   ctx.stroke();
 
-  // "18" op shirt midden
-  ctx.fillStyle = '#D2122E';
+  // "18" op shirt midden (op de rode baan, dus wit)
+  ctx.fillStyle = '#fff';
   ctx.font = 'bold 10px sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.scale(face,1); // ongedaan voor tekst
