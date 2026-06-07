@@ -34,7 +34,13 @@
     touch-action:none;
   }
   #wrap{
-    position:fixed;inset:0;
+    /* Niet inset:0 gebruiken — op iOS Safari is bottom:0 het einde van
+       de layout-viewport (achter de toolbar). Forceer expliciete hoogte
+       gebaseerd op --vh zodat we onder de toolbar uitkomen. */
+    position:fixed;top:0;left:0;
+    width:100%;
+    height:100vh;
+    height:calc(var(--vh, 1vh) * 100);
     display:flex;align-items:center;justify-content:center;
     background:#000;
   }
@@ -251,7 +257,11 @@ let dpr = window.devicePixelRatio || 1;
 // vallen onderaan onder de browserbalk. We zetten --vh op de echte
 // zichtbare hoogte (window.innerHeight) en updaten bij elke wijziging.
 function setVH(){
-  const h = window.innerHeight;
+  // visualViewport.height is op iOS de échte zichtbare hoogte (zonder
+  // adres-/toolbar). innerHeight kan op oudere Safari de layout-viewport
+  // teruggeven, waardoor onze container te lang werd en de knoppen-rij
+  // onder de browserbalk verdween.
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
   document.documentElement.style.setProperty('--vh', (h/100) + 'px');
 }
 function resize(){
@@ -775,7 +785,9 @@ function render(){
   // Schaal: logische 400x700 -> echte canvas
   const scale = Math.min(W/VIEW_W, H/VIEW_H);
   const offX = (W - VIEW_W*scale)/2;
-  const offY = (H - VIEW_H*scale)/2;
+  // Bottom-align: eventueel overschot komt boven (lucht), nooit onder.
+  // Zo blijft de grond en Jens altijd zichtbaar net boven de knoppen.
+  const offY = H - VIEW_H*scale;
   ctx.translate(offX, offY);
   ctx.scale(scale, scale);
 
