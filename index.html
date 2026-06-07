@@ -416,7 +416,54 @@ const LEVELS = [
     cheer: "Wat mooi geknutseld Jens! 🎨",
   },
   {
-    // Level 3 — Thuis chillen: muziek luisteren, iPad kijken
+    // Level 3 — Lekker Eten: pizza, friet, ijs
+    name: "Lekker Eten 🍕",
+    bg: ["#ffe680","#ffb84d"],
+    floorColor: "#a85a2a",
+    accent: "#e84a4a",
+    length: 2600,
+    platforms: [
+      {x:260,  y:590, w:100, h:18},
+      {x:440,  y:540, w:100, h:18},
+      {x:620,  y:580, w:100, h:18},
+      {x:800,  y:520, w:100, h:18},
+      {x:980,  y:560, w:100, h:18},
+      {x:1160, y:500, w:100, h:18},
+      {x:1340, y:550, w:110, h:18},
+      {x:1540, y:490, w:110, h:18},
+      {x:1740, y:530, w:110, h:18},
+      {x:1940, y:480, w:120, h:18},
+      {x:2160, y:520, w:120, h:18},
+      {x:2380, y:480, w:120, h:18},
+    ],
+    items: [
+      {x:310, y:550, e:'🍕', s:15},
+      {x:490, y:500, e:'🍟', s:10},
+      {x:670, y:540, e:'🍔', s:15},
+      {x:850, y:480, e:'🍦', s:15},
+      {x:1030,y:520, e:'🍕', s:15},
+      {x:1210,y:460, e:'🍩', s:10},
+      {x:1395,y:510, e:'🍟', s:10},
+      {x:1595,y:450, e:'🍰', s:20},
+      {x:1795,y:490, e:'🌮', s:15},
+      {x:1995,y:440, e:'🍦', s:15},
+      {x:2220,y:480, e:'🍕', s:15},
+      {x:2440,y:440, e:'🎂', s:50},
+    ],
+    enemies: [
+      // Pittige peper en hete saus die rondglijden
+      {x:580,  y:618, minX:520, maxX:740, speed:1.4, e:'🌶️', size:34},
+      {x:980,  y:618, minX:900, maxX:1160,speed:1.6, e:'🍅', size:34},
+      {x:1400, y:618, minX:1340,maxX:1580,speed:1.7, e:'🌶️', size:34},
+      {x:1800, y:618, minX:1720,maxX:1980,speed:1.8, e:'🍅', size:34},
+      {x:2200, y:618, minX:2140,maxX:2360,speed:1.9, e:'🌶️', size:34},
+    ],
+    goalEmoji: '🍽️',
+    intro: "Level 3 — Lekker Eten!",
+    cheer: "Smakelijk Jens! 🍕",
+  },
+  {
+    // Level 4 — Thuis chillen: muziek luisteren, iPad kijken
     name: "Thuis Chillen 🛋️",
     bg: ["#ffd9a0","#ff9a76"],
     floorColor: "#6b4423",
@@ -459,7 +506,7 @@ const LEVELS = [
       {x:2200, y:618, minX:2140,maxX:2360,speed:1.8, e:'📞', size:34},
     ],
     goalEmoji: '🛋️',
-    intro: "Level 3 — Thuis Chillen!",
+    intro: "Level 4 — Thuis Chillen!",
     cheer: "Lekker chillen Jens! 🎧",
   },
   {
@@ -507,7 +554,7 @@ const LEVELS = [
       {x:2400, y:618, minX:2340,maxX:2540,speed:2.4, e:'😤', size:36},
     ],
     goalEmoji: '🏟️',
-    intro: "Level 4 — Hup UDI!",
+    intro: "Level 5 — Hup UDI!",
     cheer: "Doelpunt Jens! ⚽",
   },
   {
@@ -558,8 +605,53 @@ const LEVELS = [
     // Noah helpt mee als vriendelijk character (loopt rond aan einde)
     friend: {x:2780, y:600, e:'🧑'},
     goalEmoji: '🎤',
-    intro: "Level 5 — Knolpower!",
+    intro: "Level 6 — Knolpower!",
     cheer: "Feest Jens! 🥔🎶",
+  },
+  {
+    // Level 7 — Slapen Lekker: dromen in de nacht
+    name: "Slapen Lekker 💤",
+    bg: ["#1a1a4a","#4a3a8a"],
+    floorColor: "#2a1a4a",
+    accent: "#fff3a8",
+    length: 2400,
+    platforms: [
+      // Wolken om op te springen
+      {x:260,  y:590, w:100, h:18},
+      {x:440,  y:540, w:100, h:18},
+      {x:620,  y:580, w:100, h:18},
+      {x:800,  y:520, w:100, h:18},
+      {x:980,  y:560, w:100, h:18},
+      {x:1160, y:500, w:100, h:18},
+      {x:1340, y:550, w:110, h:18},
+      {x:1540, y:490, w:110, h:18},
+      {x:1740, y:530, w:110, h:18},
+      {x:1940, y:480, w:120, h:18},
+      {x:2160, y:520, w:120, h:18},
+    ],
+    items: [
+      {x:310, y:550, e:'⭐', s:10},
+      {x:490, y:500, e:'🌙', s:15},
+      {x:670, y:540, e:'⭐', s:10},
+      {x:850, y:480, e:'🐑', s:15},
+      {x:1030,y:520, e:'⭐', s:10},
+      {x:1210,y:460, e:'🌟', s:15},
+      {x:1395,y:510, e:'🐑', s:15},
+      {x:1595,y:450, e:'🦄', s:30},
+      {x:1795,y:490, e:'⭐', s:10},
+      {x:1995,y:440, e:'🌟', s:15},
+      {x:2220,y:480, e:'🎂', s:50},
+    ],
+    enemies: [
+      // Dingen die Jens wakker willen maken — vriendelijk
+      {x:580,  y:618, minX:520, maxX:740, speed:1.3, e:'⏰', size:34},
+      {x:980,  y:618, minX:900, maxX:1160,speed:1.5, e:'📢', size:34},
+      {x:1400, y:618, minX:1340,maxX:1580,speed:1.6, e:'⏰', size:34},
+      {x:1800, y:618, minX:1720,maxX:1980,speed:1.7, e:'📢', size:34},
+    ],
+    goalEmoji: '🛏️',
+    intro: "Level 7 — Slapen Lekker!",
+    cheer: "Welterusten Jens! 💤",
   },
 ];
 
@@ -963,6 +1055,31 @@ function drawDecor(){
       ctx.fillText('🧶', x+150, 324);
     }
   } else if(idx === 2){
+    // Lekker Eten — restaurant: tafels met borden, hangende lampjes
+    // Tafels langs de wereld
+    for(let x=100; x<L.length; x+=260){
+      ctx.fillStyle = '#8a4a2a';
+      ctx.fillRect(x, 360, 180, 10);
+      ctx.fillStyle = '#6b3a1f';
+      ctx.fillRect(x+20, 370, 8, 40);
+      ctx.fillRect(x+152,370, 8, 40);
+      // Eten op tafel
+      ctx.font='28px serif';
+      ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText('🍕', x+40,  362);
+      ctx.fillText('🍔', x+90,  362);
+      ctx.fillText('🍟', x+140, 362);
+    }
+    // Hangende lampjes (warm restaurant-licht)
+    for(let x=80; x<L.length; x+=160){
+      ctx.strokeStyle = '#222'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 80); ctx.stroke();
+      ctx.fillStyle = '#ffb84d';
+      ctx.beginPath(); ctx.arc(x, 92, 12, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,200,100,0.35)';
+      ctx.beginPath(); ctx.arc(x, 100, 30, 0, Math.PI*2); ctx.fill();
+    }
+  } else if(idx === 3){
     // Thuis chillen — meubels, lamp, plant, TV op de achtergrond
     for(let x=100; x<L.length; x+=320){
       // Vloerkleed
@@ -997,7 +1114,7 @@ function drawDecor(){
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
       ctx.fillRect(sx, sy, 3, 3);
     }
-  } else if(idx === 3){
+  } else if(idx === 4){
     // Voetbalveld: tribunes, vlaggen
     for(let x=0; x<L.length; x+=80){
       ctx.fillStyle = (Math.floor(x/80)%2===0) ? '#6db83a' : '#5ba82e';
@@ -1014,7 +1131,7 @@ function drawDecor(){
       ctx.fillStyle = '#0a3aa3';
       ctx.fillRect(x+6, 312, 50, 16);
     }
-  } else {
+  } else if(idx === 5){
     // Knolpower-feest: discobollen, confetti-spikkels
     for(let x=150; x<L.length; x+=260){
       ctx.fillStyle = '#fff';
@@ -1031,6 +1148,37 @@ function drawDecor(){
       const sy = 200 + (i*53)%300;
       ctx.fillStyle = ['#D2122E','#ffd84d','#9b4dff','#7ee3ff','#ff6ad1'][i%5];
       ctx.fillRect(sx, sy, 5, 5);
+    }
+  } else {
+    // Slapen Lekker — nachtelijke hemel met maan, sterren en zzz's
+    // Maan
+    ctx.fillStyle = '#fff3a8';
+    ctx.beginPath(); ctx.arc(120, 110, 32, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a1a4a';
+    ctx.beginPath(); ctx.arc(108, 100, 28, 0, Math.PI*2); ctx.fill();
+    // Sterren door de hele lucht
+    for(let i=0;i<120;i++){
+      const sx = (i*97) % L.length;
+      const sy = 30 + (i*41) % 360;
+      const r = (i%5===0) ? 2.5 : 1.5;
+      ctx.fillStyle = (i%7===0) ? '#fff3a8' : '#fff';
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI*2); ctx.fill();
+    }
+    // Zachte wolken
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    for(let x=60; x<L.length; x+=320){
+      ctx.beginPath();
+      ctx.arc(x, 200, 24, 0, Math.PI*2);
+      ctx.arc(x+30, 195, 28, 0, Math.PI*2);
+      ctx.arc(x+60, 200, 24, 0, Math.PI*2);
+      ctx.fill();
+    }
+    // Zwevende "Zzz" hier en daar
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font='bold 24px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(let x=300; x<L.length; x+=480){
+      ctx.fillText('Zzz', x, 260);
     }
   }
 }
@@ -1319,7 +1467,16 @@ const audio = (function(){
                'F4','F4','A4','A4', 'G4','G4','C4','C4'],
       lead:'triangle', bassType:'triangle',
     },
-    // 2 — Thuis chillen: rustig, lounge
+    // 2 — Lekker Eten: vrolijk diner-deuntje (tarantella-stijl)
+    {
+      tempo:150,
+      melody: ['G4','C5','E5','G5', 'F5','E5','D5','C5',
+               'D5','F5','A5','F5', 'E5','D5','C5','R'],
+      bass:   ['C4','C4','G4','G4', 'F4','F4','C4','C4',
+               'D4','D4','A4','A4', 'G4','G4','C4','C4'],
+      lead:'square', bassType:'triangle',
+    },
+    // 3 — Thuis chillen: rustig, lounge
     {
       tempo:95,
       melody: ['E5','R','G5','R',   'F5','E5','D5','R',
@@ -1328,7 +1485,7 @@ const audio = (function(){
                'A4','A4','C4','C4', 'F4','F4','E4','E4'],
       lead:'sine', bassType:'triangle',
     },
-    // 3 — Voetbalveld: marching, opzwepend
+    // 4 — Voetbalveld: marching, opzwepend
     {
       tempo:160,
       melody: ['E5','G5','C5','E5', 'D5','F5','B4','D5',
@@ -1337,7 +1494,7 @@ const audio = (function(){
                'C4','C4','E4','E4', 'G4','G4','G4','C4'],
       lead:'square', bassType:'sawtooth',
     },
-    // 4 — Knolpower feest: feestelijk dansritme
+    // 5 — Knolpower feest: feestelijk dansritme
     {
       tempo:175,
       melody: ['C5','E5','G5','C6', 'B5','G5','E5','C5',
@@ -1345,6 +1502,15 @@ const audio = (function(){
       bass:   ['C4','G4','C4','G4', 'F4','C4','F4','C4',
                'A4','E4','A4','E4', 'G4','D4','G4','C4'],
       lead:'sawtooth', bassType:'square',
+    },
+    // 6 — Slapen Lekker: zachte slaapliedjes-loop
+    {
+      tempo:65,
+      melody: ['C5','E5','G5','E5', 'D5','C5','R','R',
+               'A4','C5','E5','C5', 'G4','C5','R','R'],
+      bass:   ['C4','C4','C4','C4', 'G4','G4','G4','G4',
+               'F4','F4','F4','F4', 'C4','C4','C4','C4'],
+      lead:'sine', bassType:'sine',
     },
   ];
 

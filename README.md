@@ -20,9 +20,11 @@ Open `index.html` lokaal in de browser, of host op GitHub Pages.
 
 1. **De Bakkerij** — broodjes & koffie ☕🥐
 2. **The Bakery** — knutselen, armbandjes, kleuren 🎨📿
-3. **Thuis Chillen** — muziek & iPad 🎧📱
-4. **Het Voetbalveld** — UDI'19, voetballen verzamelen ⚽
-5. **Knolpower Feest** — eindfeest met confetti 🥔🎶
+3. **Lekker Eten** — pizza, friet, ijs 🍕🍟🍦
+4. **Thuis Chillen** — muziek & iPad 🎧📱
+5. **Het Voetbalveld** — UDI'19, voetballen verzamelen ⚽
+6. **Knolpower Feest** — feest met confetti 🥔🎶
+7. **Slapen Lekker** — nachtlevel met sterren en zzz's 💤🌙
 
 Jens draagt z'n UDI'19-shirt (rood/wit/blauw verticale strepen).
 
