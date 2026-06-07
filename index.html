@@ -63,6 +63,18 @@
     background:rgba(0,0,0,0.35);
     padding:6px 12px;border-radius:20px;
   }
+  /* Mute-knop rechtsboven, altijd zichtbaar */
+  #muteBtn{
+    position:absolute;top:10px;right:10px;
+    width:42px;height:42px;border-radius:50%;
+    background:rgba(0,0,0,0.55);
+    border:2px solid #fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;color:#fff;
+    z-index:20;cursor:pointer;
+    pointer-events:auto;
+  }
+  #muteBtn.muted{background:rgba(120,0,0,0.7);}
 
   /* Touch-knoppen onderin */
   #controls{
@@ -138,6 +150,9 @@
 <div id="wrap">
   <div id="game">
     <canvas id="cv"></canvas>
+
+    <!-- Mute / unmute geluid -->
+    <div id="muteBtn" title="Geluid aan/uit">🔊</div>
 
     <!-- HUD: score en level -->
     <div id="hud" class="hidden">
@@ -473,6 +488,7 @@ function update(){
   if(input.jumpQueued && player.onGround){
     player.vy = JUMP_V;
     player.onGround = false;
+    audio.sfx('jump');
   }
   input.jumpQueued = false;
 
@@ -521,6 +537,7 @@ function update(){
       state.score += it.s;
       spawnSparkle(ix, iy);
       document.getElementById('score').textContent = state.score;
+      audio.sfx('coin');
     }
   }
 
@@ -542,6 +559,7 @@ function update(){
           player.vy = JUMP_V * 0.7;
           state.score += 20;
           document.getElementById('score').textContent = state.score;
+          audio.sfx('stomp');
         } else {
           // Schade
           state.lives--;
@@ -550,6 +568,7 @@ function update(){
           player.vx = -player.facing * 4;
           state.shake = 12;
           document.getElementById('lives').textContent = state.lives;
+          audio.sfx('hit');
           if(state.lives <= 0){
             showGameOver();
             return;
@@ -565,6 +584,7 @@ function update(){
     state.goalReached = true;
     state.score += 100;
     document.getElementById('score').textContent = state.score;
+    audio.sfx('goal');
     setTimeout(nextLevel, 400);
   }
 
@@ -925,8 +945,215 @@ function drawJens(x,y){
   ctx.restore();
 }
 
+/* ============================================================
+   AUDIO — Web Audio API, alles procedureel gegenereerd
+   ============================================================
+   - audio.sfx(name): kort effect (jump, coin, stomp, hit, goal)
+   - audio.playMusic(idx): start loop-muziek voor level (0/1/2)
+   - audio.stopMusic(): stopt loop
+   - audio.fanfare(): korte jingle bij level-overgang
+   - audio.win(): grote eindfanfare
+   - audio.toggleMute(): zet alles aan/uit
+   Pas hier melodieën of timbres aan om de muziek anders te maken.
+============================================================ */
+const audio = (function(){
+  let ctx = null;
+  let masterGain = null;
+  let musicGain = null;
+  let sfxGain = null;
+  let muted = false;
+  let musicTimer = null;
+  let musicStep = 0;
+  let musicLevel = -1;
+
+  function ensure(){
+    if(ctx) return ctx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    ctx = new AC();
+    masterGain = ctx.createGain(); masterGain.gain.value = muted?0:0.8;
+    masterGain.connect(ctx.destination);
+    musicGain = ctx.createGain(); musicGain.gain.value = 0.22;
+    musicGain.connect(masterGain);
+    sfxGain = ctx.createGain(); sfxGain.gain.value = 0.6;
+    sfxGain.connect(masterGain);
+    return ctx;
+  }
+
+  function resume(){
+    ensure();
+    if(ctx && ctx.state === 'suspended') ctx.resume();
+  }
+
+  // Basis-toon: oscillator met envelope
+  function tone(freq, dur, type='square', vol=0.4, dest=null, slideTo=null){
+    if(!ctx) return;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, ctx.currentTime);
+    if(slideTo){
+      o.frequency.exponentialRampToValueAtTime(Math.max(20,slideTo), ctx.currentTime + dur);
+    }
+    g.gain.setValueAtTime(0, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    o.connect(g); g.connect(dest || sfxGain);
+    o.start(); o.stop(ctx.currentTime + dur + 0.05);
+  }
+
+  // Ruis (voor "stomp"/"hit")
+  function noise(dur, vol=0.3, hp=400){
+    if(!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate*dur, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value = hp;
+    const g = ctx.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(sfxGain);
+    src.start();
+  }
+
+  function sfx(name){
+    ensure(); if(!ctx) return;
+    switch(name){
+      case 'jump':  tone(380, 0.18, 'square', 0.35, null, 720); break;
+      case 'coin':  tone(880, 0.08, 'square', 0.3); setTimeout(()=>tone(1320,0.12,'square',0.3),60); break;
+      case 'stomp': noise(0.12, 0.35, 200); tone(180,0.15,'sawtooth',0.25,null,80); break;
+      case 'hit':   noise(0.25, 0.4, 100); tone(160,0.3,'square',0.3,null,60); break;
+      case 'goal':
+        tone(523,0.12,'square',0.35);
+        setTimeout(()=>tone(659,0.12,'square',0.35), 110);
+        setTimeout(()=>tone(784,0.12,'square',0.35), 220);
+        setTimeout(()=>tone(1047,0.25,'square',0.4), 330);
+        break;
+      case 'click': tone(660, 0.06, 'square', 0.3); break;
+    }
+  }
+
+  // ---- Muziek: simpele loops per level ----
+  // Noten in Hz (eenvoudige scale)
+  const N = {
+    C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
+    C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00, B5:987.77,
+    C6:1046.5,
+    R:0,
+  };
+  // Drie thema's — 16 stappen, herhalend
+  // 0: Bakkerij — vrolijk + cosy
+  // 1: Voetbal  — marching, opzwepend
+  // 2: Knolpower— feestelijk dans-ritme
+  const MUSIC = [
+    {
+      tempo:140,
+      melody: ['C5','E5','G5','E5', 'F5','A5','G5','E5',
+               'D5','F5','A5','F5', 'E5','G5','C5','R'],
+      bass:   ['C4','C4','G4','G4', 'F4','F4','C4','C4',
+               'D4','D4','A4','A4', 'C4','C4','G4','C4'],
+      lead:'triangle', bassType:'square',
+    },
+    {
+      tempo:160,
+      melody: ['E5','G5','C5','E5', 'D5','F5','B4','D5',
+               'C5','E5','G5','C6', 'B4','D5','G5','R'],
+      bass:   ['C4','C4','E4','E4', 'G4','G4','B4','B4',
+               'C4','C4','E4','E4', 'G4','G4','G4','C4'],
+      lead:'square', bassType:'sawtooth',
+    },
+    {
+      tempo:175,
+      melody: ['C5','E5','G5','C6', 'B5','G5','E5','C5',
+               'A4','C5','E5','A5', 'G5','E5','C5','R'],
+      bass:   ['C4','G4','C4','G4', 'F4','C4','F4','C4',
+               'A4','E4','A4','E4', 'G4','D4','G4','C4'],
+      lead:'sawtooth', bassType:'square',
+    },
+  ];
+
+  function playStep(){
+    if(musicLevel < 0 || !ctx) return;
+    const m = MUSIC[musicLevel];
+    const beat = 60/m.tempo;
+    const dur = beat * 0.9;
+    const step = musicStep % m.melody.length;
+    const mel = N[m.melody[step]];
+    const bas = N[m.bass[step]];
+    if(mel) tone(mel, dur, m.lead, 0.2, musicGain);
+    if(bas) tone(bas, dur, m.bassType, 0.18, musicGain);
+    // Tikje hi-hat op offbeats
+    if(step % 2 === 1) noise(0.04, 0.05, 6000);
+    musicStep++;
+    musicTimer = setTimeout(playStep, beat*1000);
+  }
+
+  function playMusic(idx){
+    ensure(); if(!ctx) return;
+    if(musicLevel === idx) return;
+    stopMusic();
+    musicLevel = idx;
+    musicStep = 0;
+    playStep();
+  }
+  function stopMusic(){
+    if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
+    musicLevel = -1;
+  }
+
+  function fanfare(){
+    ensure(); if(!ctx) return;
+    const seq = [['C5',0],['E5',120],['G5',240],['C6',360],['E5',520],['G5',640],['C6',780]];
+    seq.forEach(([n,t])=>setTimeout(()=>tone(N[n], 0.22, 'square', 0.35), t));
+  }
+  function win(){
+    ensure(); if(!ctx) return;
+    const seq = [
+      ['C5',0],['E5',100],['G5',200],['C6',320],
+      ['B5',520],['C6',620],['G5',780],['C6',920],
+      ['E6',1080,1318.5],
+    ];
+    seq.forEach(([n,t,override])=>{
+      const f = override || N[n];
+      setTimeout(()=>{
+        tone(f, 0.35, 'square', 0.35);
+        tone(f/2, 0.35, 'triangle', 0.25);
+      }, t);
+    });
+  }
+
+  function toggleMute(){
+    ensure();
+    muted = !muted;
+    if(masterGain) masterGain.gain.value = muted ? 0 : 0.8;
+    return muted;
+  }
+  function isMuted(){ return muted; }
+
+  return { resume, sfx, playMusic, stopMusic, fanfare, win, toggleMute, isMuted };
+})();
+
+// Mute-knop koppelen
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.addEventListener('click', ()=>{
+  const m = audio.toggleMute();
+  muteBtn.textContent = m ? '🔇' : '🔊';
+  muteBtn.classList.toggle('muted', m);
+});
+// Eerste user-tap moet audio-context activeren (browser policy)
+function unlockAudioOnce(){
+  audio.resume();
+  document.removeEventListener('touchstart', unlockAudioOnce);
+  document.removeEventListener('mousedown',  unlockAudioOnce);
+  document.removeEventListener('keydown',    unlockAudioOnce);
+}
+document.addEventListener('touchstart', unlockAudioOnce, {passive:true});
+document.addEventListener('mousedown',  unlockAudioOnce);
+document.addEventListener('keydown',    unlockAudioOnce);
+
 /* ---------- 7. SCHERMEN / FLOW ---------- */
 function startGame(){
+  audio.resume();
+  audio.sfx('click');
   state.score = 0;
   state.lives = 3;
   document.getElementById('score').textContent = '0';
@@ -938,6 +1165,7 @@ function startGame(){
   document.getElementById('endScreen').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('controls').classList.remove('hidden');
+  audio.playMusic(0);
 }
 
 function nextLevel(){
@@ -946,24 +1174,31 @@ function nextLevel(){
     return;
   }
   state.phase = 'levelEnd';
+  audio.stopMusic();
+  audio.fanfare();
   document.getElementById('levelTitle').textContent = `Level ${state.levelIdx+2}!`;
   document.getElementById('levelSubtitle').textContent = state.level.cheer + " Door naar " + LEVELS[state.levelIdx+1].name;
   document.getElementById('levelScreen').classList.remove('hidden');
 }
 
 function continueAfterLevel(){
+  audio.sfx('click');
   document.getElementById('levelScreen').classList.add('hidden');
   loadLevel(state.levelIdx+1);
   state.phase = 'playing';
+  audio.playMusic(state.levelIdx);
 }
 
 function showGameOver(){
   state.phase = 'gameOver';
+  audio.stopMusic();
   document.getElementById('gameOverScreen').classList.remove('hidden');
 }
 
 function showEnding(){
   state.phase = 'finished';
+  audio.stopMusic();
+  audio.win();
   document.getElementById('finalScore').textContent = state.score;
   document.getElementById('endScreen').classList.remove('hidden');
   document.getElementById('hud').classList.add('hidden');
