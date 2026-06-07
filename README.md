@@ -18,9 +18,13 @@ Open `index.html` lokaal in de browser, of host op GitHub Pages.
 
 ## Levels
 
-1. **De Bakkerij** — verzamel broodjes en koffie ☕🥐
-2. **Het Voetbalveld** — Ajax-veld, voetballen verzamelen ⚽
-3. **Knolpower Feest** — eindfeest met confetti 🥔🎶
+1. **De Bakkerij** — broodjes & koffie ☕🥐
+2. **The Bakery** — knutselen, armbandjes, kleuren 🎨📿
+3. **Thuis Chillen** — muziek & iPad 🎧📱
+4. **Het Voetbalveld** — UDI'19, voetballen verzamelen ⚽
+5. **Knolpower Feest** — eindfeest met confetti 🥔🎶
+
+Jens draagt z'n UDI'19-shirt (rood/wit/blauw verticale strepen).
 
 ## Code aanpassen
 
