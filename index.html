@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>Jens' Verjaardags-Avontuur</title>
+<style>
+  /* ============================================================
+     STIJL — kleuren, layout, knoppen
+     Pas hier kleuren of fonts aan.
+  ============================================================ */
+  :root{
+    --ajax-red:#D2122E;
+    --ajax-white:#ffffff;
+    --bg-sky:#7ec8ff;
+    --btn-bg:rgba(255,255,255,0.85);
+    --btn-press:rgba(255,220,120,0.95);
+    --text-dark:#222;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0;padding:0;height:100%;width:100%;
+    overflow:hidden;
+    background:#000;
+    font-family:'Comic Sans MS','Chalkboard SE','Verdana',sans-serif;
+    color:var(--text-dark);
+    user-select:none;-webkit-user-select:none;
+    touch-action:none;
+  }
+  #wrap{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    background:#000;
+  }
+  #game{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    max-width:500px;
+    background:var(--bg-sky);
+    overflow:hidden;
+  }
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    image-rendering:pixelated;
+  }
+  /* HUD bovenin */
+  #hud{
+    position:absolute;left:0;right:0;top:0;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px;
+    font-weight:bold;font-size:18px;
+    color:white;
+    text-shadow:2px 2px 0 #000, -1px -1px 0 #000;
+    pointer-events:none;
+    z-index:5;
+  }
+  #hud .pill{
+    background:rgba(0,0,0,0.35);
+    padding:6px 12px;border-radius:20px;
+  }
+
+  /* Touch-knoppen onderin */
+  #controls{
+    position:absolute;left:0;right:0;bottom:0;
+    display:flex;justify-content:space-between;align-items:flex-end;
+    padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    pointer-events:none;
+    z-index:6;
+  }
+  .group{display:flex;gap:14px;pointer-events:auto;}
+  .btn{
+    width:80px;height:80px;border-radius:50%;
+    background:var(--btn-bg);
+    border:4px solid #333;
+    display:flex;align-items:center;justify-content:center;
+    font-size:34px;font-weight:bold;color:#222;
+    box-shadow:0 4px 0 #333, 0 6px 12px rgba(0,0,0,0.4);
+    pointer-events:auto;
+    transition:transform 0.05s, background 0.05s;
+  }
+  .btn:active, .btn.pressed{
+    background:var(--btn-press);
+    transform:translateY(3px);
+    box-shadow:0 1px 0 #333, 0 3px 6px rgba(0,0,0,0.4);
+  }
+  #jumpBtn{width:96px;height:96px;font-size:22px;background:#ffd84d;}
+
+  /* Overlay-schermen */
+  .overlay{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    text-align:center;
+    background:linear-gradient(180deg, #ffe680 0%, #ff9a44 100%);
+    padding:24px;
+    z-index:10;
+  }
+  .overlay h1{
+    font-size:38px;margin:0 0 10px;color:var(--ajax-red);
+    text-shadow:3px 3px 0 #fff, 6px 6px 0 #000;
+    line-height:1.1;
+  }
+  .overlay h2{
+    font-size:26px;margin:8px 0;color:#222;
+  }
+  .overlay p{
+    font-size:18px;margin:10px 0;max-width:340px;color:#222;
+  }
+  .overlay .big-btn{
+    margin-top:24px;
+    padding:18px 36px;
+    font-size:26px;font-weight:bold;
+    background:var(--ajax-red);color:#fff;
+    border:4px solid #fff;border-radius:30px;
+    box-shadow:0 6px 0 #7a0a1c, 0 10px 16px rgba(0,0,0,0.3);
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .overlay .big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #7a0a1c;}
+  .hidden{display:none !important;}
+
+  .names{font-size:20px;color:#0a2b6b;font-weight:bold;margin-top:14px;}
+
+  .level-flash{
+    background:linear-gradient(180deg,#fff7d6,#ffd0a0);
+  }
+  .ending{
+    background:linear-gradient(180deg,#ffb3d9,#ffd84d 50%,#9bd6ff);
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="game">
+    <canvas id="cv"></canvas>
+
+    <!-- HUD: score en level -->
+    <div id="hud" class="hidden">
+      <div class="pill">Score: <span id="score">0</span></div>
+      <div class="pill">❤️ <span id="lives">3</span></div>
+      <div class="pill" id="levelLabel">Level 1</div>
+    </div>
+
+    <!-- Touch-knoppen -->
+    <div id="controls" class="hidden">
+      <div class="group">
+        <div class="btn" id="leftBtn">◀</div>
+        <div class="btn" id="rightBtn">▶</div>
+      </div>
+      <div class="group">
+        <div class="btn" id="jumpBtn">SPRING</div>
+      </div>
+    </div>
+
+    <!-- Startscherm -->
+    <div id="startScreen" class="overlay">
+      <h1>Happy Birthday<br>Jens! 🎉</h1>
+      <h2>18 jaar!</h2>
+      <p>Ga met Jens op avontuur door de bakkerij, het voetbalveld en het Knolpower-feest!</p>
+      <button class="big-btn" id="startBtn">▶ SPELEN</button>
+      <div class="names">van Siebe, Mats &amp; Ole</div>
+    </div>
+
+    <!-- Level-overgang -->
+    <div id="levelScreen" class="overlay level-flash hidden">
+      <h1 id="levelTitle">Level 2!</h1>
+      <h2 id="levelSubtitle">Geweldig Jens!</h2>
+      <button class="big-btn" id="nextLevelBtn">VERDER ▶</button>
+    </div>
+
+    <!-- Game over -->
+    <div id="gameOverScreen" class="overlay hidden" style="background:linear-gradient(180deg,#444,#222);color:#fff;">
+      <h1 style="color:#ffd84d;text-shadow:3px 3px 0 #000;">Bijna Jens!</h1>
+      <h2 style="color:#fff;">Probeer het nog eens 💪</h2>
+      <button class="big-btn" id="retryBtn">OPNIEUW</button>
+    </div>
+
+    <!-- Eindscherm -->
+    <div id="endScreen" class="overlay ending hidden">
+      <h1>Gefeliciteerd<br>Jens! 🎉</h1>
+      <h2>Knolpower! 🥔🎶</h2>
+      <p>18 jaar! Wat een feest!</p>
+      <p style="font-weight:bold;">Score: <span id="finalScore">0</span></p>
+      <div class="names">❤️ Siebe · Mats · Ole ❤️<br>en Noah natuurlijk!</div>
+      <button class="big-btn" id="playAgainBtn">NOG EENS!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   JENS' VERJAARDAGS-AVONTUUR
+   Eén-bestand platformgame, vanilla JS + Canvas
+   ============================================================
+   STRUCTUUR:
+   1. Setup / canvas / input
+   2. Level-definities (3 levels, makkelijk aan te passen)
+   3. Speler (Jens) — physics + tekenen
+   4. Wereld: platforms, items, vijanden, decor
+   5. Game-loop: update + render
+   6. Schermen: start, level-overgang, einde, game over
+   ============================================================ */
+
+/* ---------- 1. SETUP ---------- */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+// Logische resolutie — wereld renderen op vaste hoogte, schaal naar scherm
+const VIEW_W = 400;
+const VIEW_H = 700;
+let dpr = window.devicePixelRatio || 1;
+
+function resize(){
+  const w = document.getElementById('game').clientWidth;
+  const h = document.getElementById('game').clientHeight;
+  cv.width  = Math.floor(w * dpr);
+  cv.height = Math.floor(h * dpr);
+  cv.style.width  = w + 'px';
+  cv.style.height = h + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Input-state
+const input = { left:false, right:false, jump:false, jumpQueued:false };
+
+function bindBtn(id, key){
+  const el = document.getElementById(id);
+  const press = e => { e.preventDefault(); input[key] = true; if(key==='jump') input.jumpQueued = true; el.classList.add('pressed'); };
+  const release = e => { e.preventDefault(); input[key] = false; el.classList.remove('pressed'); };
+  el.addEventListener('touchstart', press, {passive:false});
+  el.addEventListener('touchend',   release,{passive:false});
+  el.addEventListener('touchcancel',release,{passive:false});
+  el.addEventListener('mousedown',  press);
+  el.addEventListener('mouseup',    release);
+  el.addEventListener('mouseleave', release);
+}
+bindBtn('leftBtn',  'left');
+bindBtn('rightBtn', 'right');
+bindBtn('jumpBtn',  'jump');
+
+// Toetsenbord-bonus
+window.addEventListener('keydown', e=>{
+  if(e.key==='ArrowLeft'||e.key==='a') input.left = true;
+  if(e.key==='ArrowRight'||e.key==='d') input.right = true;
+  if(e.key===' '||e.key==='ArrowUp'||e.key==='w'){ input.jump = true; input.jumpQueued = true; }
+});
+window.addEventListener('keyup', e=>{
+  if(e.key==='ArrowLeft'||e.key==='a') input.left = false;
+  if(e.key==='ArrowRight'||e.key==='d') input.right = false;
+  if(e.key===' '||e.key==='ArrowUp'||e.key==='w') input.jump = false;
+});
+
+/* ---------- 2. LEVEL-DEFINITIES ---------- */
+/* Tip: pas hier dingen aan om levels makkelijker/moeilijker te maken */
+const LEVELS = [
+  {
+    name: "De Bakkerij 🥐",
+    bg: ["#ffe6c2","#ffb877"],
+    floorColor: "#7a4a22",
+    accent: "#c87a3a",
+    length: 2400,
+    platforms: [
+      // {x, y(top), w, h}
+      {x:300,  y:540, w:90, h:18},
+      {x:480,  y:480, w:90, h:18},
+      {x:660,  y:540, w:90, h:18},
+      {x:860,  y:460, w:100,h:18},
+      {x:1060, y:520, w:100,h:18},
+      {x:1240, y:450, w:100,h:18},
+      {x:1440, y:540, w:120,h:18},
+      {x:1660, y:470, w:110,h:18},
+      {x:1880, y:520, w:110,h:18},
+      {x:2080, y:460, w:120,h:18},
+    ],
+    items: [
+      // emoji + score
+      {x:330, y:500, e:'🥐', s:10},
+      {x:510, y:440, e:'🥐', s:10},
+      {x:690, y:500, e:'☕', s:15},
+      {x:890, y:420, e:'🥖', s:10},
+      {x:1090,y:480, e:'🥐', s:10},
+      {x:1280,y:410, e:'☕', s:15},
+      {x:1480,y:500, e:'🥖', s:10},
+      {x:1700,y:430, e:'☕', s:15},
+      {x:1920,y:480, e:'🥐', s:10},
+      {x:2120,y:420, e:'🎂', s:50},
+    ],
+    enemies: [
+      // {x,y,minX,maxX,speed,emoji}
+      {x:600,  y:618, minX:560, maxX:780, speed:1.0, e:'🥐', size:34},
+      {x:1100, y:618, minX:1020,maxX:1240,speed:1.4, e:'☕', size:34},
+      {x:1600, y:618, minX:1540,maxX:1780,speed:1.2, e:'🥐', size:34},
+      {x:2000, y:618, minX:1940,maxX:2160,speed:1.6, e:'☕', size:34},
+    ],
+    goalEmoji: '🏁',
+    intro: "Level 1 — De Bakkerij!",
+    cheer: "Lekker bezig Jens! 🥐",
+  },
+  {
+    name: "Het Voetbalveld ⚽",
+    bg: ["#9be36a","#5fb83a"],
+    floorColor: "#2f7a1f",
+    accent: "#D2122E",
+    length: 2800,
+    platforms: [
+      {x:260,  y:520, w:90, h:18},
+      {x:440,  y:460, w:90, h:18},
+      {x:620,  y:520, w:90, h:18},
+      {x:800,  y:430, w:100,h:18},
+      {x:1000, y:500, w:100,h:18},
+      {x:1180, y:420, w:100,h:18},
+      {x:1380, y:490, w:110,h:18},
+      {x:1580, y:410, w:100,h:18},
+      {x:1780, y:480, w:110,h:18},
+      {x:1980, y:400, w:110,h:18},
+      {x:2200, y:470, w:120,h:18},
+      {x:2420, y:400, w:110,h:18},
+    ],
+    items: [
+      {x:290, y:480, e:'⚽', s:10},
+      {x:470, y:420, e:'⚽', s:10},
+      {x:650, y:480, e:'⚽', s:10},
+      {x:830, y:390, e:'🏆', s:25},
+      {x:1030,y:460, e:'⚽', s:10},
+      {x:1210,y:380, e:'⚽', s:10},
+      {x:1410,y:450, e:'🏆', s:25},
+      {x:1610,y:370, e:'⚽', s:10},
+      {x:1810,y:440, e:'⚽', s:10},
+      {x:2010,y:360, e:'🏆', s:25},
+      {x:2240,y:430, e:'⚽', s:10},
+      {x:2460,y:360, e:'🎂', s:50},
+    ],
+    enemies: [
+      // Tegenstanders in andere kleur
+      {x:550,  y:618, minX:500, maxX:720, speed:1.6, e:'😤', size:36},
+      {x:950,  y:618, minX:880, maxX:1140,speed:1.8, e:'😤', size:36},
+      {x:1300, y:618, minX:1240,maxX:1480,speed:2.0, e:'😈', size:36},
+      {x:1700, y:618, minX:1640,maxX:1880,speed:2.0, e:'😤', size:36},
+      {x:2100, y:618, minX:2040,maxX:2300,speed:2.2, e:'😈', size:36},
+      {x:2400, y:618, minX:2340,maxX:2540,speed:2.4, e:'😤', size:36},
+    ],
+    goalEmoji: '🏟️',
+    intro: "Level 2 — Hup Ajax!",
+    cheer: "Doelpunt Jens! ⚽",
+  },
+  {
+    name: "Knolpower Feest 🎉",
+    bg: ["#ff8ad1","#ffd84d"],
+    floorColor: "#5c2a8a",
+    accent: "#9b4dff",
+    length: 3000,
+    platforms: [
+      {x:240,  y:520, w:90, h:18},
+      {x:420,  y:450, w:90, h:18},
+      {x:600,  y:510, w:90, h:18},
+      {x:780,  y:420, w:100,h:18},
+      {x:980,  y:490, w:100,h:18},
+      {x:1170, y:410, w:100,h:18},
+      {x:1370, y:480, w:110,h:18},
+      {x:1570, y:400, w:100,h:18},
+      {x:1770, y:470, w:110,h:18},
+      {x:1970, y:390, w:110,h:18},
+      {x:2190, y:460, w:120,h:18},
+      {x:2410, y:390, w:110,h:18},
+      {x:2620, y:470, w:130,h:18},
+    ],
+    items: [
+      {x:270, y:480, e:'🥔', s:15},
+      {x:450, y:410, e:'🎵', s:15},
+      {x:630, y:470, e:'🥔', s:15},
+      {x:810, y:380, e:'🎵', s:15},
+      {x:1010,y:450, e:'🥔', s:15},
+      {x:1200,y:370, e:'🎵', s:15},
+      {x:1400,y:440, e:'🎁', s:30},
+      {x:1600,y:360, e:'🥔', s:15},
+      {x:1800,y:430, e:'🎵', s:15},
+      {x:2000,y:350, e:'🎁', s:30},
+      {x:2220,y:420, e:'🥔', s:15},
+      {x:2440,y:350, e:'🎁', s:30},
+      {x:2660,y:430, e:'🎂', s:100},
+    ],
+    enemies: [
+      {x:500,  y:618, minX:440, maxX:680, speed:1.8, e:'👻', size:38},
+      {x:900,  y:618, minX:840, maxX:1080,speed:2.0, e:'🤡', size:38},
+      {x:1300, y:618, minX:1240,maxX:1480,speed:2.2, e:'👻', size:38},
+      {x:1700, y:618, minX:1640,maxX:1880,speed:2.4, e:'🤡', size:38},
+      {x:2100, y:618, minX:2040,maxX:2300,speed:2.4, e:'👻', size:38},
+      {x:2500, y:618, minX:2440,maxX:2680,speed:2.6, e:'🤡', size:38},
+    ],
+    // Noah helpt mee als vriendelijk character (loopt rond aan einde)
+    friend: {x:2780, y:600, e:'🧑'},
+    goalEmoji: '🎤',
+    intro: "Level 3 — Knolpower!",
+    cheer: "Feest Jens! 🥔🎶",
+  },
+];
+
+/* ---------- 3. SPELER (Jens) ---------- */
+const GROUND_Y = 660;       // y-coordinaat van vloer (top van vloer)
+const GRAVITY = 0.7;
+const JUMP_V  = -14;
+const MOVE_SPEED = 3.6;
+
+const player = {
+  x:60, y:GROUND_Y-60, w:36, h:60,
+  vx:0, vy:0,
+  onGround:false,
+  facing:1,
+  invuln:0,
+  // animatie
+  walkTime:0,
+};
+
+function resetPlayer(startX=60){
+  player.x = startX;
+  player.y = GROUND_Y - player.h;
+  player.vx = 0; player.vy = 0;
+  player.onGround = false;
+  player.invuln = 0;
+}
+
+/* ---------- 4. GAME STATE ---------- */
+let state = {
+  phase:'start',   // start | playing | levelEnd | gameOver | finished
+  levelIdx:0,
+  score:0,
+  lives:3,
+  cameraX:0,
+  level:null,
+  items:[],
+  enemies:[],
+  particles:[],   // confetti / sterren
+  shake:0,
+  goalReached:false,
+  bgClouds:[],
+};
+
+function loadLevel(idx){
+  const L = LEVELS[idx];
+  state.level = L;
+  state.levelIdx = idx;
+  state.items = L.items.map(it => ({...it, taken:false, bob:Math.random()*Math.PI*2}));
+  state.enemies = L.enemies.map(en => ({...en, dir:1, anim:Math.random()*Math.PI*2}));
+  state.cameraX = 0;
+  state.goalReached = false;
+  state.particles = [];
+  state.bgClouds = [];
+  for(let i=0;i<6;i++){
+    state.bgClouds.push({x:Math.random()*L.length, y:60+Math.random()*180, s:0.5+Math.random()*0.7});
+  }
+  resetPlayer();
+  document.getElementById('levelLabel').textContent = `Level ${idx+1}`;
+}
+
+/* ---------- 5. UPDATE-LOGICA ---------- */
+function update(){
+  if(state.phase !== 'playing') return;
+
+  // Beweging horizontaal
+  let ax = 0;
+  if(input.left)  ax -= 1;
+  if(input.right) ax += 1;
+  player.vx = ax * MOVE_SPEED;
+  if(ax !== 0) player.facing = ax;
+
+  // Spring
+  if(input.jumpQueued && player.onGround){
+    player.vy = JUMP_V;
+    player.onGround = false;
+  }
+  input.jumpQueued = false;
+
+  // Zwaartekracht
+  player.vy += GRAVITY;
+  if(player.vy > 18) player.vy = 18;
+
+  // Horizontale beweging + grenzen
+  player.x += player.vx;
+  if(player.x < 0) player.x = 0;
+  if(player.x > state.level.length - player.w) player.x = state.level.length - player.w;
+
+  // Verticaal + platform/vloer-collision
+  player.y += player.vy;
+  player.onGround = false;
+
+  // Vloer
+  if(player.y + player.h >= GROUND_Y){
+    player.y = GROUND_Y - player.h;
+    player.vy = 0;
+    player.onGround = true;
+  }
+
+  // Platforms — alleen landen vanaf bovenkant
+  for(const p of state.level.platforms){
+    const wasAbove = (player.y + player.h - player.vy) <= p.y + 1;
+    if(wasAbove &&
+       player.x + player.w > p.x + 4 &&
+       player.x < p.x + p.w - 4 &&
+       player.y + player.h >= p.y &&
+       player.y + player.h <= p.y + p.h + 2){
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    }
+  }
+
+  // Items oppakken
+  for(const it of state.items){
+    if(it.taken) continue;
+    it.bob += 0.08;
+    const ix = it.x, iy = it.y;
+    if(Math.abs((player.x+player.w/2) - ix) < 26 &&
+       Math.abs((player.y+player.h/2) - iy) < 30){
+      it.taken = true;
+      state.score += it.s;
+      spawnSparkle(ix, iy);
+      document.getElementById('score').textContent = state.score;
+    }
+  }
+
+  // Vijanden bewegen + collision
+  for(const en of state.enemies){
+    en.x += en.speed * en.dir;
+    if(en.x < en.minX){ en.x = en.minX; en.dir = 1; }
+    if(en.x > en.maxX){ en.x = en.maxX; en.dir = -1; }
+    en.anim += 0.15;
+
+    if(player.invuln <= 0){
+      const dx = (player.x + player.w/2) - en.x;
+      const dy = (player.y + player.h/2) - en.y;
+      if(Math.abs(dx) < 28 && Math.abs(dy) < 36){
+        // Stamp van bovenaf? -> vijand uit
+        if(player.vy > 2 && (player.y + player.h) < en.y + 12){
+          spawnSparkle(en.x, en.y);
+          en.x = -9999; // verwijder
+          player.vy = JUMP_V * 0.7;
+          state.score += 20;
+          document.getElementById('score').textContent = state.score;
+        } else {
+          // Schade
+          state.lives--;
+          player.invuln = 90;
+          player.vy = -8;
+          player.vx = -player.facing * 4;
+          state.shake = 12;
+          document.getElementById('lives').textContent = state.lives;
+          if(state.lives <= 0){
+            showGameOver();
+            return;
+          }
+        }
+      }
+    }
+  }
+  if(player.invuln > 0) player.invuln--;
+
+  // Doel bereikt?
+  if(!state.goalReached && player.x >= state.level.length - 80){
+    state.goalReached = true;
+    state.score += 100;
+    document.getElementById('score').textContent = state.score;
+    setTimeout(nextLevel, 400);
+  }
+
+  // Camera
+  const targetCam = Math.max(0, Math.min(state.level.length - VIEW_W, player.x - VIEW_W*0.35));
+  state.cameraX += (targetCam - state.cameraX) * 0.18;
+
+  // Particles
+  for(let i=state.particles.length-1;i>=0;i--){
+    const p = state.particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
+    if(p.life <= 0) state.particles.splice(i,1);
+  }
+
+  // Wolkjes
+  for(const c of state.bgClouds){
+    c.x += 0.2 * c.s;
+    if(c.x > state.level.length + 50) c.x = -100;
+  }
+
+  // Animatie
+  if(Math.abs(player.vx) > 0.5) player.walkTime += 0.25;
+
+  if(state.shake > 0) state.shake--;
+}
+
+function spawnSparkle(x,y){
+  for(let i=0;i<10;i++){
+    state.particles.push({
+      x,y,
+      vx:(Math.random()-0.5)*4,
+      vy:-2-Math.random()*3,
+      life:30+Math.random()*20,
+      c:['#ffd84d','#ff6ad1','#7ee3ff','#fff'][i%4],
+      r:3+Math.random()*3,
+    });
+  }
+}
+
+function spawnConfetti(){
+  for(let i=0;i<60;i++){
+    state.particles.push({
+      x: state.cameraX + Math.random()*VIEW_W,
+      y: -20,
+      vx:(Math.random()-0.5)*3,
+      vy:1+Math.random()*3,
+      life:120,
+      c:['#D2122E','#ffd84d','#9b4dff','#7ee3ff','#ff6ad1','#fff'][i%6],
+      r:3+Math.random()*4,
+    });
+  }
+}
+
+/* ---------- 6. RENDER ---------- */
+function render(){
+  const W = cv.width, H = cv.height;
+  ctx.save();
+  // Schaal: logische 400x700 -> echte canvas
+  const scale = Math.min(W/VIEW_W, H/VIEW_H);
+  const offX = (W - VIEW_W*scale)/2;
+  const offY = (H - VIEW_H*scale)/2;
+  ctx.translate(offX, offY);
+  ctx.scale(scale, scale);
+
+  // Screen shake
+  if(state.shake > 0){
+    ctx.translate((Math.random()-0.5)*state.shake, (Math.random()-0.5)*state.shake);
+  }
+
+  // Achtergrond
+  const L = state.level;
+  if(L){
+    const grad = ctx.createLinearGradient(0,0,0,VIEW_H);
+    grad.addColorStop(0, L.bg[0]);
+    grad.addColorStop(1, L.bg[1]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,VIEW_W,VIEW_H);
+
+    // Wolkjes / sfeer
+    drawClouds();
+
+    // Camera-translatie voor wereld
+    ctx.save();
+    ctx.translate(-state.cameraX, 0);
+
+    // Level-specifiek decor
+    drawDecor();
+
+    // Vloer
+    ctx.fillStyle = L.floorColor;
+    ctx.fillRect(0, GROUND_Y, L.length, VIEW_H-GROUND_Y);
+    // Vloer-streep
+    ctx.fillStyle = L.accent;
+    ctx.fillRect(0, GROUND_Y, L.length, 6);
+
+    // Platforms
+    for(const p of L.platforms){
+      ctx.fillStyle = L.accent;
+      roundRect(p.x, p.y, p.w, p.h, 6, true);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillRect(p.x+4, p.y+3, p.w-8, 3);
+    }
+
+    // Doel (vlag aan einde)
+    drawGoal();
+
+    // Items
+    for(const it of state.items){
+      if(it.taken) continue;
+      const off = Math.sin(it.bob)*4;
+      ctx.font = '32px serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(it.e, it.x, it.y + off);
+    }
+
+    // Noah (vriend) in level 3
+    if(L.friend){
+      drawFriend(L.friend.x, L.friend.y);
+    }
+
+    // Vijanden
+    for(const en of state.enemies){
+      if(en.x < -1000) continue;
+      const bob = Math.sin(en.anim)*3;
+      ctx.font = en.size+'px serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='bottom';
+      ctx.fillText(en.e, en.x, en.y + bob);
+    }
+
+    // Speler (Jens)
+    drawJens(player.x, player.y);
+
+    // Particles
+    for(const p of state.particles){
+      ctx.fillStyle = p.c;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function roundRect(x,y,w,h,r,fill){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+  if(fill) ctx.fill();
+}
+
+function drawClouds(){
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  for(const c of state.bgClouds){
+    const px = c.x - state.cameraX*0.3; // parallax
+    ctx.beginPath();
+    ctx.arc(px, c.y, 18*c.s, 0, Math.PI*2);
+    ctx.arc(px+22*c.s, c.y-6*c.s, 20*c.s, 0, Math.PI*2);
+    ctx.arc(px+44*c.s, c.y, 18*c.s, 0, Math.PI*2);
+    ctx.arc(px+22*c.s, c.y+8*c.s, 16*c.s, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawDecor(){
+  const L = state.level;
+  if(state.levelIdx === 0){
+    // Bakkerij: planken met broodjes, plafondlampjes
+    for(let x=100; x<L.length; x+=240){
+      ctx.fillStyle = '#7a4a22';
+      ctx.fillRect(x, 250, 140, 8);
+      ctx.font='26px serif';
+      ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText('🥖', x+30, 254);
+      ctx.fillText('🥐', x+70, 254);
+      ctx.fillText('🧁', x+110, 254);
+      // lamp
+      ctx.strokeStyle = '#444'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x+70, 0); ctx.lineTo(x+70, 130); ctx.stroke();
+      ctx.fillStyle = '#ffd84d';
+      ctx.beginPath(); ctx.arc(x+70, 140, 14, 0, Math.PI*2); ctx.fill();
+    }
+  } else if(state.levelIdx === 1){
+    // Voetbalveld: tribunes, vlaggen
+    for(let x=0; x<L.length; x+=80){
+      ctx.fillStyle = (Math.floor(x/80)%2===0) ? '#6db83a' : '#5ba82e';
+      ctx.fillRect(x, GROUND_Y-2, 80, 2);
+    }
+    // Doel-achtige paaltjes & Ajax-vlaggen
+    for(let x=200; x<L.length; x+=350){
+      ctx.fillStyle='#fff';
+      ctx.fillRect(x, 280, 6, 200);
+      // rood-wit-rood vlag
+      ctx.fillStyle = '#D2122E';
+      ctx.fillRect(x+6, 280, 50, 16);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x+6, 296, 50, 16);
+      ctx.fillStyle = '#D2122E';
+      ctx.fillRect(x+6, 312, 50, 16);
+    }
+  } else {
+    // Knolpower-feest: discobollen, confetti-spikkels
+    for(let x=150; x<L.length; x+=260){
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(x, 120, 18, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#888';
+      ctx.fillRect(x-1, 0, 2, 100);
+      // Glitters
+      ctx.fillStyle = '#ffd84d';
+      ctx.fillRect(x-12, 118, 4, 4);
+      ctx.fillStyle = '#ff6ad1';
+      ctx.fillRect(x+10, 122, 4, 4);
+    }
+    // Achtergrond-confetti (statisch)
+    for(let i=0;i<80;i++){
+      const sx = (i*137) % L.length;
+      const sy = 200 + (i*53)%300;
+      ctx.fillStyle = ['#D2122E','#ffd84d','#9b4dff','#7ee3ff','#ff6ad1'][i%5];
+      ctx.fillRect(sx, sy, 5, 5);
+    }
+  }
+}
+
+function drawGoal(){
+  const L = state.level;
+  const gx = L.length - 40;
+  // Paal
+  ctx.fillStyle = '#444';
+  ctx.fillRect(gx, GROUND_Y-160, 6, 160);
+  // Vlag
+  ctx.fillStyle = '#D2122E';
+  ctx.beginPath();
+  ctx.moveTo(gx+6, GROUND_Y-160);
+  ctx.lineTo(gx+60, GROUND_Y-140);
+  ctx.lineTo(gx+6, GROUND_Y-120);
+  ctx.closePath();
+  ctx.fill();
+  // Icoon
+  ctx.font='30px serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(L.goalEmoji, gx+28, GROUND_Y-180);
+}
+
+function drawFriend(x,y){
+  // Noah — vriendje, simpel mannetje met groene shirt
+  ctx.save();
+  ctx.translate(x, y);
+  // Hoofd
+  ctx.fillStyle = '#f5cba0';
+  ctx.beginPath(); ctx.arc(0,-44,12,0,Math.PI*2); ctx.fill();
+  // Haar
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(-12,-56,24,8);
+  // Shirt
+  ctx.fillStyle = '#2b8a3e';
+  roundRect(-14,-32,28,28,4,true);
+  // Benen
+  ctx.fillStyle = '#222';
+  ctx.fillRect(-12,-4, 8, 12);
+  ctx.fillRect( 4, -4, 8, 12);
+  // Tekst-bubbel
+  ctx.fillStyle = '#fff';
+  roundRect(-30,-90,90,22,8,true);
+  ctx.fillStyle = '#222';
+  ctx.font='bold 14px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText("Hoi Jens!", 15, -79);
+  ctx.restore();
+}
+
+/* Jens — cartoon mannetje met Ajax-shirt (rood-wit-rood verticaal) */
+function drawJens(x,y){
+  ctx.save();
+  // Knipper bij invuln
+  if(player.invuln>0 && Math.floor(player.invuln/6)%2===0){
+    ctx.globalAlpha = 0.4;
+  }
+  ctx.translate(x + player.w/2, y);
+  const face = player.facing;
+  ctx.scale(face,1);
+
+  const walk = Math.sin(player.walkTime) * (player.onGround?1:0);
+  const armSwing = walk*6;
+  const legSwing = walk*5;
+
+  // Schaduw
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(0, player.h+2, 18, 4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Benen
+  ctx.fillStyle = '#222';
+  ctx.fillRect(-10 + legSwing, player.h-16, 8, 14);
+  ctx.fillRect(  2 - legSwing, player.h-16, 8, 14);
+  // Schoenen
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-12 + legSwing, player.h-4, 12, 4);
+  ctx.fillRect(  0 - legSwing, player.h-4, 12, 4);
+
+  // Shirt: Ajax rood-wit-rood verticaal
+  ctx.fillStyle = '#D2122E';
+  roundRect(-14, 18, 28, 28, 4, true);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-6, 18, 12, 28);
+  // Schouderlijntje
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.fillRect(-14, 18, 28, 3);
+
+  // Armen
+  ctx.fillStyle = '#f5cba0';
+  ctx.fillRect(-18, 22 + armSwing, 6, 18);
+  ctx.fillRect( 12, 22 - armSwing, 6, 18);
+
+  // Hoofd
+  ctx.fillStyle = '#f5cba0';
+  ctx.beginPath();
+  ctx.arc(0, 8, 14, 0, Math.PI*2);
+  ctx.fill();
+  // Wangetjes
+  ctx.fillStyle = '#ff9b9b';
+  ctx.beginPath(); ctx.arc(-7, 12, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 7, 12, 2.5, 0, Math.PI*2); ctx.fill();
+
+  // Haar
+  ctx.fillStyle = '#3a2a1a';
+  ctx.beginPath();
+  ctx.arc(0, 2, 14, Math.PI, Math.PI*2);
+  ctx.fill();
+  ctx.fillRect(-14, 0, 28, 5);
+
+  // Ogen
+  ctx.fillStyle = '#222';
+  ctx.beginPath(); ctx.arc(-4, 8, 2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 5, 8, 2, 0, Math.PI*2); ctx.fill();
+  // Glimlach
+  ctx.strokeStyle = '#a0421e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 13, 4, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // "18" op shirt midden
+  ctx.fillStyle = '#D2122E';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.scale(face,1); // ongedaan voor tekst
+  ctx.fillText('18', 0, 34);
+
+  ctx.restore();
+}
+
+/* ---------- 7. SCHERMEN / FLOW ---------- */
+function startGame(){
+  state.score = 0;
+  state.lives = 3;
+  document.getElementById('score').textContent = '0';
+  document.getElementById('lives').textContent = '3';
+  loadLevel(0);
+  state.phase = 'playing';
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('gameOverScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('controls').classList.remove('hidden');
+}
+
+function nextLevel(){
+  if(state.levelIdx >= LEVELS.length-1){
+    showEnding();
+    return;
+  }
+  state.phase = 'levelEnd';
+  document.getElementById('levelTitle').textContent = `Level ${state.levelIdx+2}!`;
+  document.getElementById('levelSubtitle').textContent = state.level.cheer + " Door naar " + LEVELS[state.levelIdx+1].name;
+  document.getElementById('levelScreen').classList.remove('hidden');
+}
+
+function continueAfterLevel(){
+  document.getElementById('levelScreen').classList.add('hidden');
+  loadLevel(state.levelIdx+1);
+  state.phase = 'playing';
+}
+
+function showGameOver(){
+  state.phase = 'gameOver';
+  document.getElementById('gameOverScreen').classList.remove('hidden');
+}
+
+function showEnding(){
+  state.phase = 'finished';
+  document.getElementById('finalScore').textContent = state.score;
+  document.getElementById('endScreen').classList.remove('hidden');
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('controls').classList.add('hidden');
+  spawnConfetti();
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('nextLevelBtn').addEventListener('click', continueAfterLevel);
+document.getElementById('retryBtn').addEventListener('click', startGame);
+document.getElementById('playAgainBtn').addEventListener('click', startGame);
+
+/* ---------- 8. HOOFD-LOOP ---------- */
+function loop(){
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+// Voorlaad level 0 zodat startscherm-achtergrond niet flikkert
+loadLevel(0);
+state.phase = 'start';
+requestAnimationFrame(loop);
+
+// Voorkom dubbel-tap zoom op iOS
+document.addEventListener('gesturestart', e=>e.preventDefault());
+document.addEventListener('dblclick', e=>e.preventDefault());
+</script>
+</body>
+</html>
