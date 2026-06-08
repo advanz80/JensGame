@@ -793,6 +793,11 @@ function loadLevel(idx){
 function update(){
   if(state.phase !== 'playing') return;
 
+  // Onthoud waar voeten stonden voor déze frame-beweging. Wordt gebruikt
+  // voor stomp-detectie zodat een ground/platform-collision die vy=0 zet,
+  // de stomp-check niet kapot maakt.
+  const prevFeetY = player.y + player.h;
+
   // Beweging horizontaal
   let ax = 0;
   if(input.left)  ax -= 1;
@@ -868,9 +873,13 @@ function update(){
     if(player.invuln <= 0){
       const dx = (player.x + player.w/2) - en.x;
       const dy = (player.y + player.h/2) - en.y;
-      if(Math.abs(dx) < 28 && Math.abs(dy) < 36){
-        // Stamp van bovenaf? -> vijand uit
-        if(player.vy > 2 && (player.y + player.h) < en.y + 12){
+      // Ruimere collision-zone zodat ook deels-bovenop-landen telt
+      if(Math.abs(dx) < 34 && Math.abs(dy) < 38){
+        // Stomp-check op positie i.p.v. snelheid: stonden de voeten
+        // vóór deze frame op of boven de vijand? Dan is dit een stomp,
+        // óók als de platform-collision de vy intussen op 0 heeft gezet.
+        const wasAbove = prevFeetY <= en.y + 6;
+        if(wasAbove){
           spawnSparkle(en.x, en.y);
           en.dead = true; // permanent verwijderd
           player.vy = JUMP_V * 0.7;
