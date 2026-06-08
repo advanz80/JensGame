@@ -708,8 +708,8 @@ function resetPlayer(startX=60){
 */
 const DIFFICULTY = {
   beginner:  { lives:3, speedMult:1.0, platformEnemies:0, flyingEnemies:0, label:'Beginner'  },
-  gevorderd: { lives:2, speedMult:1.4, platformEnemies:3, flyingEnemies:2, label:'Gevorderd' },
-  expert:    { lives:1, speedMult:1.8, platformEnemies:6, flyingEnemies:4, label:'Expert'    },
+  gevorderd: { lives:3, speedMult:1.4, platformEnemies:3, flyingEnemies:2, label:'Gevorderd' },
+  expert:    { lives:3, speedMult:1.8, platformEnemies:6, flyingEnemies:4, label:'Expert'    },
 };
 
 let state = {
@@ -726,6 +726,7 @@ let state = {
   shake:0,
   goalReached:false,
   bgClouds:[],
+  hitFreeze:0,    // > 0 = even pauze na een treffer, daarna respawn aan start
 };
 
 function loadLevel(idx){
@@ -792,6 +793,20 @@ function loadLevel(idx){
 /* ---------- 5. UPDATE-LOGICA ---------- */
 function update(){
   if(state.phase !== 'playing') return;
+
+  // Hit-freeze: na een treffer staat alles even stil; aan het einde
+  // respawnt Jens aan het begin van het level. Verzamelde items en
+  // verslagen vijanden blijven zoals ze waren — alleen Jens gaat terug.
+  if(state.hitFreeze > 0){
+    state.hitFreeze--;
+    if(state.shake > 0) state.shake--;
+    if(state.hitFreeze === 0){
+      resetPlayer(60);
+      state.cameraX = 0;
+      player.invuln = 60; // korte onkwetsbaarheid bij respawn
+    }
+    return;
+  }
 
   // Onthoud waar voeten stonden voor déze frame-beweging. Wordt gebruikt
   // voor stomp-detectie zodat een ground/platform-collision die vy=0 zet,
@@ -888,18 +903,20 @@ function update(){
           audio.sfx('stomp');
           continue;
         } else {
-          // Schade
+          // Schade — start freeze + respawn aan begin level
           state.lives--;
-          player.invuln = 90;
-          player.vy = -8;
-          player.vx = -player.facing * 4;
-          state.shake = 12;
+          state.shake = 20;
           document.getElementById('lives').textContent = state.lives;
           audio.sfx('hit');
           if(state.lives <= 0){
             showGameOver();
             return;
           }
+          // Freeze; tijdens deze frames staat alles stil, dan respawn
+          state.hitFreeze = 55;
+          player.vx = 0;
+          player.vy = 0;
+          return;
         }
       }
     }
@@ -1065,6 +1082,24 @@ function render(){
   }
 
   ctx.restore();
+
+  // Hit-freeze overlay: grote "AU!" zodat duidelijk is wat er gebeurt
+  if(state.hitFreeze > 0){
+    ctx.save();
+    const alpha = Math.min(1, state.hitFreeze/30);
+    ctx.fillStyle = `rgba(0,0,0,${0.35*alpha})`;
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#ffd84d';
+    ctx.strokeStyle = '#7a0a1c';
+    ctx.lineWidth = 8;
+    ctx.font = `bold ${Math.floor(H*0.18)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const wobble = Math.sin(state.hitFreeze*0.4) * 6;
+    ctx.strokeText('AU!', W/2 + wobble, H/2);
+    ctx.fillText('AU!',  W/2 + wobble, H/2);
+    ctx.restore();
+  }
 }
 
 function roundRect(x,y,w,h,r,fill){
