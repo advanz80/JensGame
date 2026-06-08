@@ -701,11 +701,15 @@ function resetPlayer(startX=60){
 
 /* ---------- 4. GAME STATE ---------- */
 /* Moeilijkheidsgraden — pas hier multipliers aan om het makkelijker
-   of moeilijker te maken. */
+   of moeilijker te maken.
+   - speedMult: snelheid van álle vijanden (× originele patrol speed)
+   - platformEnemies: aantal extra vijanden BOVENOP de platforms (patroule)
+   - flyingEnemies:   aantal vliegende vijanden tussen de platforms door
+*/
 const DIFFICULTY = {
-  beginner:  { lives:3, speedMult:1.0, extraEnemies:0, label:'Beginner'  },
-  gevorderd: { lives:2, speedMult:1.45,extraEnemies:1, label:'Gevorderd' },
-  expert:    { lives:1, speedMult:1.9, extraEnemies:2, label:'Expert'    },
+  beginner:  { lives:3, speedMult:1.0, platformEnemies:0, flyingEnemies:0, label:'Beginner'  },
+  gevorderd: { lives:2, speedMult:1.4, platformEnemies:3, flyingEnemies:2, label:'Gevorderd' },
+  expert:    { lives:1, speedMult:1.8, platformEnemies:6, flyingEnemies:4, label:'Expert'    },
 };
 
 let state = {
@@ -735,17 +739,43 @@ function loadLevel(idx){
     ...en, dir:1, anim:Math.random()*Math.PI*2,
     speed: en.speed * D.speedMult,
   }));
-  // Expert/gevorderd voegen extra vijanden toe, gespreid over het level
-  for(let i=0;i<D.extraEnemies && L.enemies.length>0;i++){
-    const base = L.enemies[i % L.enemies.length];
-    const offset = (i+1) * (L.length / (D.extraEnemies+2));
+
+  // Platform-vijanden: patrouleren BOVENOP een platform, zodat ook de
+  // hogere route niet veilig is. Spreid over het hele level.
+  const plats = L.platforms;
+  const platCount = Math.min(D.platformEnemies, plats.length);
+  for(let i=0; i<platCount && L.enemies.length>0; i++){
+    const pIdx = Math.floor(((i + 0.5) / platCount) * plats.length);
+    const p = plats[pIdx];
+    const tmpl = L.enemies[i % L.enemies.length];
     state.enemies.push({
-      ...base,
-      x: base.x + offset,
-      minX: base.minX + offset,
-      maxX: base.maxX + offset,
-      dir:1, anim:Math.random()*Math.PI*2,
-      speed: base.speed * D.speedMult,
+      ...tmpl,
+      x: p.x + p.w/2,
+      y: p.y - 2,                      // bovenop platform
+      minX: p.x + 8,
+      maxX: p.x + p.w - 8,
+      dir: (i%2===0) ? 1 : -1,
+      anim: Math.random()*Math.PI*2,
+      speed: tmpl.speed * D.speedMult * 0.9,
+    });
+  }
+
+  // Vliegende vijanden: zweven op tussenhoogte tussen platforms in.
+  // Patrouleren over een breder gebied, zo blokkeren ze sprongroutes.
+  for(let i=0; i<D.flyingEnemies && L.enemies.length>0; i++){
+    const tmpl = L.enemies[i % L.enemies.length];
+    const cx = ((i + 0.5) / D.flyingEnemies) * L.length;
+    const range = 220;
+    state.enemies.push({
+      ...tmpl,
+      x: cx,
+      y: 360 + (i*37)%100,             // ergens tussen 360 en 460 hoog
+      minX: Math.max(80, cx - range),
+      maxX: Math.min(L.length - 80, cx + range),
+      dir: (i%2===0) ? 1 : -1,
+      anim: Math.random()*Math.PI*2,
+      speed: tmpl.speed * D.speedMult * 1.1,
+      flying: true,
     });
   }
   state.cameraX = 0;
