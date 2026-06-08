@@ -890,11 +890,14 @@ function update(){
       const dy = (player.y + player.h/2) - en.y;
       // Ruimere collision-zone zodat ook deels-bovenop-landen telt
       if(Math.abs(dx) < 34 && Math.abs(dy) < 38){
-        // Stomp-check op positie i.p.v. snelheid: stonden de voeten
-        // vóór deze frame op of boven de vijand? Dan is dit een stomp,
-        // óók als de platform-collision de vy intussen op 0 heeft gezet.
-        const wasAbove = prevFeetY <= en.y + 6;
-        if(wasAbove){
+        // Stomp alleen als Jens écht van bovenaf op de vijand valt:
+        // - vorige voet-positie was boven de vijand (prevFeetY <= en.y), én
+        // - deze frame zijn de voeten naar beneden bewogen.
+        // Zo telt naast lopen tegen een vijand op gelijk niveau niet als
+        // stomp, ook niet als de platform-collision vy intussen reset.
+        const wasAbove = prevFeetY <= en.y;
+        const movedDown = (player.y + player.h) > prevFeetY;
+        if(wasAbove && movedDown){
           spawnSparkle(en.x, en.y);
           en.dead = true; // permanent verwijderd
           player.vy = JUMP_V * 0.7;
